@@ -96,21 +96,29 @@ async def get_items():
     limit_results = "FETCH FIRST 2 ROWS ONLY;"
     query = {
         "procedure": "queryRun",
-        "query": f"SELECT item.id AS id, item.itemid AS name, item.purchasedescription as description, item.custjls_image_url AS image FROM item WHERE item.manufacturer = ? {limit_results}",
+        "query": f"SELECT item.id AS id, item.itemid AS name, item.purchasedescription as description, item.custitem_jls_item_image_url AS image FROM item WHERE item.manufacturer = ? {limit_results}",
         "params": ["LUMIEN LIGHTING"],  # Use the MANUFACTURER variable
     }
     items = await process_data(query)
-    records = items['records']
     
     # Ensure the path is correct and exists
     image_directory = os.path.join('input', 'images', 'items')
     os.makedirs(image_directory, exist_ok=True)
-    
-    for item in records:
-        image = item.get('image')
-        name = item.get('name')
-        if image:
-            image_url = f"https://{account}.app.netsuite.com/{image}"
+    records = items.get('records')
+    if records:
+        for item in records:
+            image = item.get('image')
+            name = item.get('name')
+            if image:
+                image_url = f"https://{account}.app.netsuite.com/{image}"
             ic(image)
         else:
             ic(name)
+
+def to_snake_case(text: str) -> str:
+    # Replace any non-alphanumeric characters with underscores
+    snake_case = re.sub(r'[^\w\s]', '_', text)
+    # Replace spaces with underscores
+    snake_case = re.sub(r'\s+', '_', snake_case)
+    # Convert to lowercase and remove any consecutive underscores
+    return re.sub(r'_+', '_', snake_case.lower()).strip('_')

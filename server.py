@@ -1,11 +1,7 @@
-from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import FastAPI
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from python_label_maker.get_items import get_items
 
 SQLALCHEMY_DATABASE_URL = "postgresql://developer:wassermelone@localhost/jls_items"
 
@@ -16,22 +12,9 @@ Base = declarative_base()
 
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-templates = Jinja2Templates(directory="templates")
-
-@app.get("/favicon.png", include_in_schema=False)
-async def favicon():
-    return FileResponse("static/favicon.png")
-
-@app.get("/", response_class=HTMLResponse)
-async def root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
-
-@app.get("/items")
-async def fetch_items():
-    items = await get_items()
-    return {"items": items}
+@app.get("/")
+async def root():
+    return {"message": "Hello World"}
 
 if __name__ == "__main__":
     import uvicorn

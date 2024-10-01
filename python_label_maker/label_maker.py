@@ -7,7 +7,6 @@ from PIL import Image
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from textwrap import wrap
-import get_items
 
 def load_config():
     with open('data/config.json', 'r') as f:
