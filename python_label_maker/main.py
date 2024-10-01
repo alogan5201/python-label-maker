@@ -1,12 +1,18 @@
-from python_label_maker import module1
+from . import file_utils
+from . import label_maker
+from icecream import ic
 
 def main():
-    print("Welcome to python_label_maker!")
+    ic("Welcome to python_label_maker!")
     
-    # Example usage of module1 and module2
-    result1 = module1.some_function()
+    # Load configuration
+    config = file_utils.load_config()
     
-    print(f"Result from module1: {result1}")
+    # Create labels
+    label_maker.create_label_pdf(config)
+    ic("Label PDF created:")
+    ic(config['output']['filename'])
+
 
 if __name__ == "__main__":
     main()

@@ -1,7 +1,6 @@
-# __init__.py
-
 from . import module1
-from . import module2
+from . import file_utils
+from . import label_maker
+from . import get_items
 
-# You can also define __all__ to control what gets imported with "from python_label_maker import *"
-__all__ = ['module1', 'module2']
+__all__ = ['module1', 'module2', 'file_utils','label_maker', 'get_items']

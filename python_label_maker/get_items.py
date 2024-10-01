@@ -1,0 +1,116 @@
+import os
+import json
+from netsuite import NetSuite, Config, TokenAuth
+from typing import List
+from pydantic import BaseModel
+import asyncio
+import pprint
+import re
+import base64
+from icecream import ic
+from PIL import Image
+from io import BytesIO
+import requests
+
+
+def load_config():
+    with open('data/config.json', 'r') as f:
+        return json.load(f)
+
+config = load_config()
+
+def extract_file_id(url):
+    # Use regex to extract the value of the 'id' parameter
+    match = re.search(r'id=(\d+)', url)
+    if match:
+        return match.group(1)  # Return the file ID
+    return None
+
+def base64_to_image(base64_string):
+    # Remove the data URI prefix if present
+    if "data:image" in base64_string:
+        base64_string = base64_string.split(",")[1]
+
+    # Decode the Base64 string into bytes
+    image_bytes = base64.b64decode(base64_string)
+    return image_bytes
+
+def create_image_from_bytes(image_bytes):
+    # Create a BytesIO object to handle the image data
+    image_stream = BytesIO(image_bytes)
+
+    # Open the image using Pillow (PIL)
+    image = Image.open(image_stream)
+    return image
+
+# Fetch TokenAuth parameters from environment variables
+consumer_key = os.getenv("NETSUITE_CONSUMER_KEY")
+consumer_secret = os.getenv("NETSUITE_CONSUMER_SECRET")
+token_id = os.getenv("NETSUITE_TOKEN_ID")
+token_secret = os.getenv("NETSUITE_TOKEN_SECRET")
+account = os.getenv("NETSUITE_ACCOUNT")
+
+# Ensure all necessary environment variables are available
+if not all([consumer_key, consumer_secret, token_id, token_secret]):
+    raise EnvironmentError("One or more NetSuite TokenAuth environment variables are not set.")
+
+# Configuring NetSuite with TokenAuth sourced from environment variables
+ns_config = Config(
+    account="7313488_SB1",  # Ensure this matches your actual NetSuite account ID
+    auth=TokenAuth(consumer_key=consumer_key, consumer_secret=consumer_secret, token_id=token_id, token_secret=token_secret),
+)
+ns = NetSuite(ns_config)
+
+async def process_data(query: dict):
+    try:
+        restlet_response = await ns.restlet.post(script_id=1171, deploy=1, body=query)
+        return restlet_response
+    except Exception as e:
+        print(f"Error calling RESTlet: {e}")
+
+def prprint(data):
+    return pprint.pprint(data)
+
+async def getRecord(id):
+    query = {
+        "procedure": "recordGet",
+          "type": "inventoryitem",
+           "id": id
+      }
+    record = await process_data(query)
+    return record
+
+async def get_file(id):
+    query = {
+        "procedure": "fileGet",
+        "id": id
+    }
+    file = await process_data(query)
+    return file
+
+def get_first_word(text: str) -> str:
+    # Split the text by whitespace and return the first word
+    return text.split()[0] if text else ""
+
+async def get_items():
+    limit_results = "FETCH FIRST 2 ROWS ONLY;"
+    query = {
+        "procedure": "queryRun",
+        "query": f"SELECT item.id AS id, item.itemid AS name, item.purchasedescription as description, item.custjls_image_url AS image FROM item WHERE item.manufacturer = ? {limit_results}",
+        "params": ["LUMIEN LIGHTING"],  # Use the MANUFACTURER variable
+    }
+    items = await process_data(query)
+    records = items['records']
+    
+    # Ensure the path is correct and exists
+    image_directory = os.path.join('input', 'images', 'items')
+    os.makedirs(image_directory, exist_ok=True)
+    
+    for item in records:
+        image = item.get('image')
+        name = item.get('name')
+        if image:
+            image_url = f"https://{account}.app.netsuite.com/{image}"
+            ic(image)
+        else:
+            ic(name)

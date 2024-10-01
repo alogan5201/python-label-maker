@@ -1,0 +1,61 @@
+{
+  "label_format": "OL125",
+  "page": {
+    "size": "letter",
+    "width": 8.5,
+    "height": 11,
+    "units": "inches"
+  },
+  "label": {
+    "width": 4,
+    "height": 2,
+    "corner_radius": 0.17188,
+    "units": "inches"
+  },
+  "layout": {
+    "labels_per_sheet": 10,
+    "columns": 2,
+    "rows": 5,
+    "horizontal_spacing": 0.14,
+    "vertical_spacing": 0,
+    "top_margin": 0.5,
+    "bottom_margin": 0.5,
+    "left_margin": 0.18,
+    "right_margin": 0.18,
+    "units": "inches"
+  },
+  "fonts": {
+    "primary": {
+      "name": "Arial-Black",
+      "file": "input/fonts/arial_black.ttf"
+    }
+  },
+  "content": {
+    "product_code": {
+      "font": "Arial-Black",
+      "size": 24,
+      "color": [0, 0, 0]
+    },
+    "description": {
+      "font": "Arial-Black",
+      "size": 8,
+      "color": [0, 0, 0],
+      "max_width": 40
+    },
+    "image": {
+      "height_percentage": 0.5,
+      "padding": 5
+    }
+  },
+  "debug": {
+    "draw_borders": true,
+    "border_color": [189, 195, 199],
+    "border_width": 0.5
+  },
+  "output": {
+    "filename": "output/pdfs/labels_ol125.pdf"
+  },
+  "input": {
+    "image_directory": "input/images/items"
+  }
+}
