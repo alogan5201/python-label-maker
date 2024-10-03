@@ -38,7 +38,7 @@
     },
     "description": {
       "font": "Arial-Black",
-      "size": 6,
+      "size": 8,
       "color": [0, 0, 0],
       "max_width": 1,
       "horizontal_padding": 0.2,

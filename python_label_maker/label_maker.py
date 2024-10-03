@@ -3,7 +3,7 @@ import json
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from textwrap import wrap
@@ -115,9 +115,48 @@ def draw_label(c, x, y, label_width, label_height, config, item):
     if config['debug']['draw_borders']:
         draw_label_border(c, x, y, label_width, label_height, config)
 
+def process_image(image_url, max_width, max_height):
+    """
+    Process an image from a URL, resizing it to fit within the given dimensions.
+
+    Args:
+        image_url (str): The URL of the image.
+        max_width (float): The maximum width in points.
+        max_height (float): The maximum height in points.
+
+    Returns:
+        tuple: A tuple containing the processed image and its dimensions (img, width, height),
+               or None if the image couldn't be processed.
+    """
+    try:
+        response = requests.get(image_url, timeout=10)
+        response.raise_for_status()  # Raise an exception for bad status codes
+        
+        img = Image.open(BytesIO(response.content))
+        img_width, img_height = img.size
+        aspect = img_height / float(img_width)
+
+        new_width = min(max_width, img_width)
+        new_height = new_width * aspect
+
+        if new_height > max_height:
+            new_height = max_height
+            new_width = new_height / aspect
+
+        img = img.resize((int(new_width), int(new_height)), Image.LANCZOS)
+        return img, new_width, new_height
+    except requests.RequestException as e:
+        logger.error(f"Error fetching image from {image_url}: {str(e)}")
+    except UnidentifiedImageError:
+        logger.error(f"Cannot identify image from {image_url}")
+    except Exception as e:
+        logger.error(f"Error processing image from {image_url}: {str(e)}")
+    
+    return None, 0, 0
+
 def draw_background_image(c, x, y, label_width, label_height, config, item):
     """
-    Draw the product image aligned to the far-left middle of the label.
+    Draw the company logo aligned to the bottom-right of the label with padding and the product image aligned to the far-left middle of the label.
 
     Args:
         c (canvas.Canvas): The ReportLab canvas object.
@@ -128,29 +167,63 @@ def draw_background_image(c, x, y, label_width, label_height, config, item):
         config (dict): The configuration dictionary.
         item (dict): The item dictionary containing the product information.
     """
-    image_url = item['item_img']
-    response = requests.get(image_url)
-    img = Image.open(BytesIO(response.content))
-    img_width, img_height = img.size
-    aspect = img_height / float(img_width)
-    
-    # Calculate image dimensions
-    image_height = label_height * config['content']['image']['height_percentage']
-    image_width = image_height / aspect
-    
-    # Apply max width constraint
-    max_width = inches_to_points(config['content']['image']['max_width'])
-    if image_width > max_width:
-        image_width = max_width
-        image_height = image_width * aspect
-    
-    # Align the image to the far-left
-    img_x = x + config['content']['image']['padding']
-    
-    # Center the image vertically
-    img_y = y + (label_height - image_height) / 2
-    
-    c.drawImage(ImageReader(img), img_x, img_y, width=image_width, height=image_height)
+    # Draw company logo as background
+    company_img_path = os.path.join('input', 'images', 'companies', 'lumien.jpg')
+    if os.path.exists(company_img_path):
+        try:
+            company_img = Image.open(company_img_path)
+            
+            # Add padding (in inches)
+            padding = inches_to_points(0.1)  # 0.1 inches of padding, adjust as needed
+            
+            # Calculate the target width (2.5 inches or 60% of label width, whichever is smaller)
+            target_width = min(inches_to_points(2), label_width * 0.6) - (2 * padding)
+            
+            # Calculate the aspect ratio of the original image
+            aspect_ratio = company_img.height / company_img.width
+            
+            # Calculate the new dimensions
+            new_width = target_width
+            new_height = new_width * aspect_ratio
+            
+            # Resize the image
+            company_img = company_img.resize((int(new_width), int(new_height)), Image.LANCZOS)
+            
+            # Align the background image to the bottom-right with padding
+            bg_x = x + label_width - new_width - padding
+            bg_y = y + padding
+            
+            # Draw the background image with reduced opacity
+            c.saveState()
+            c.setFillAlpha(1)  # Adjust this value to change the background opacity
+            c.drawImage(ImageReader(company_img), bg_x, bg_y, width=new_width, height=new_height)
+            c.restoreState()
+        except Exception as e:
+            logger.error(f"Error processing company image: {str(e)}")
+    else:
+        logger.warning(f"Company image not found at {company_img_path}")
+
+    # Draw product image
+    product_img_url = item.get('item_img')
+    if product_img_url:
+        product_img, img_width, img_height = process_image(
+            product_img_url,
+            inches_to_points(config['content']['image']['max_width']),
+            label_height * config['content']['image']['height_percentage']
+        )
+        
+        if product_img:
+            # Align the product image to the far-left
+            img_x = x + config['content']['image']['padding']
+            
+            # Center the product image vertically
+            img_y = y + (label_height - img_height) / 2
+            
+            c.drawImage(ImageReader(product_img), img_x, img_y, width=img_width, height=img_height)
+        else:
+            logger.warning(f"Failed to process product image for item: {item.get('name', 'Unknown')}")
+    else:
+        logger.warning(f"No product image URL provided for item: {item.get('name', 'Unknown')}")
 
 def draw_centered_description(c, x, y, label_width, label_height, config, item):
     """
