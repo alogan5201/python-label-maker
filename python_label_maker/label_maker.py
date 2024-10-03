@@ -38,7 +38,7 @@ def create_label_pdf(config):
     c = canvas.Canvas(config['output']['filename'], pagesize=letter)
     
     # Get list of images
-    image_dir = config['input']['image_directory']
+    image_dir = config['input']['item_image_directory']
     images = [os.path.join(image_dir, img) for img in os.listdir(image_dir) if img.endswith('.png')]
     
     for row in range(rows):
@@ -95,5 +95,5 @@ def create_label_pdf(config):
 
 if __name__ == "__main__":
     config = load_config()
-    # pdf_path = create_label_pdf(config)
+    pdf_path = create_label_pdf(config)
         

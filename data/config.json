@@ -56,6 +56,7 @@
     "filename": "output/pdfs/labels_ol125.pdf"
   },
   "input": {
-    "image_directory": "input/images/items"
+    "item_image_directory": "input/images/items",
+    "company_image_directory": "input/images/companies"
   }
 }

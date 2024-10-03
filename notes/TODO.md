@@ -1,4 +1,0 @@
-- [ ] Pull Item Data from Netsuite
-- [ ] Save data in a local SQLite Databse
-- [ ] Pull data from local SQLite Database w/ Python
-- [ ] Use Sqlite data to generate pdf cards

@@ -8,7 +8,9 @@ Instructions on how to install your project.
 
 ## Usage
 
-Examples of how to use your project.
+```
+python -m python_label_maker.main
+```
 
 ## Contributing
 

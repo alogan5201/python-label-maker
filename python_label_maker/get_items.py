@@ -11,7 +11,7 @@ from icecream import ic
 from PIL import Image
 from io import BytesIO
 import requests
-
+from .db import insert_item
 
 def load_config():
     with open('data/config.json', 'r') as f:
@@ -93,25 +93,52 @@ def get_first_word(text: str) -> str:
     return text.split()[0] if text else ""
 
 async def get_items():
-    limit_results = "FETCH FIRST 2 ROWS ONLY;"
+    limit_results = "FETCH FIRST 5 ROWS ONLY;"
     query = {
         "procedure": "queryRun",
-        "query": f"SELECT item.id AS id, item.itemid AS name, item.purchasedescription as description, item.custitem_jls_item_image_url AS image FROM item WHERE item.manufacturer = ? {limit_results}",
+        "query": f"SELECT item.id AS id, item.itemid AS name, item.displayName AS display_name, item.purchasedescription as description, item.manufacturer AS manufacturer, item.custitem_jls_item_image_url AS item_img FROM item WHERE item.manufacturer = ? {limit_results}",
         "params": ["LUMIEN LIGHTING"],  # Use the MANUFACTURER variable
     }
     items = await process_data(query)
     
     # Ensure the path is correct and exists
-    image_directory = os.path.join('input', 'images', 'items')
-    os.makedirs(image_directory, exist_ok=True)
+    item_image_directory = os.path.join('input', 'images', 'items')
+    os.makedirs(item_image_directory, exist_ok=True)
+    company_image_directory = os.path.join('input', 'images', 'companies')
+    os.makedirs(company_image_directory, exist_ok=True)
     records = items.get('records')
     if records:
         for item in records:
-            image = item.get('image')
+            image = item.get('item_img')
             name = item.get('name')
+            description = item.get('description')
+            display_name = item.get('display_name')
+            manufacturer = item.get('manufacturer')
             if image:
-                image_url = f"https://{account}.app.netsuite.com/{image}"
-            ic(image)
+                image_url = f"https://{account}.app.netsuite.com{image}"
+                # if "LUMIEN" in manufacturer:
+                # Extract the first word from the manufacturer and lowercase it
+                company_name = manufacturer.split()[0].lower()
+                # Check if there is a file with the company name in the company image directory
+                company_image_path = os.path.join(company_image_directory, f"{company_name}.png")
+                ic(company_image_path)
+                company_logo_links = {
+                    "lumien": "https://i.imgur.com/cxcXM5J.png"
+                }
+                # Check if the company name exists in manufacturer_logo_links
+                if company_name in company_logo_links:
+                    company_logo_url = company_logo_links[company_name]
+                    ic(f"Found logo URL for {company_name}: {company_logo_url}")
+                    if company_logo_url:
+                        insert_item(
+                            name=display_name,
+                            description=description,
+                            company_img_url=company_logo_url,
+                            item_img_url=image_url
+                        )                         
+                else:
+                    ic(f"No logo URL found for {company_name}")
+                
         else:
             ic(name)
 

@@ -11,7 +11,7 @@ async def main():
     config = file_utils.load_config()
     
     # Create labels
-    # label_maker.create_label_pdf(config)
+    label_maker.create_label_pdf(config)
     await get_items.get_items()
 
 
