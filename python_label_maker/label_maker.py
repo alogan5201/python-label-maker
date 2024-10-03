@@ -139,7 +139,6 @@ def create_label_pdf(config):
         str: The path to the created PDF file.
     """
     items = get_all_items()
-    logger.success(items)
     page_width, page_height = letter
     label_width = inches_to_points(config['label']['width'])
     label_height = inches_to_points(config['label']['height'])
