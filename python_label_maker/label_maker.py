@@ -103,6 +103,11 @@ def draw_label(c, x, y, label_width, label_height, config, item):
     # Draw product code
     draw_product_code(c, x, y, label_width, label_height, config, item)
     
+    # Calculate the space left for the description
+    image_height = label_height * config['content']['image']['height_percentage']
+    product_code_height = config['content']['product_code']['size'] + 5
+    description_space = label_height - image_height - product_code_height - inches_to_points(0.2)  # 0.2 inches padding
+    
     # Draw centered description
     draw_centered_description(c, x, y, label_width, label_height, config, item)
     
@@ -112,7 +117,7 @@ def draw_label(c, x, y, label_width, label_height, config, item):
 
 def draw_background_image(c, x, y, label_width, label_height, config, item):
     """
-    Draw the product image as a background for the label.
+    Draw the product image aligned to the far-left middle of the label.
 
     Args:
         c (canvas.Canvas): The ReportLab canvas object.
@@ -133,15 +138,23 @@ def draw_background_image(c, x, y, label_width, label_height, config, item):
     image_height = label_height * config['content']['image']['height_percentage']
     image_width = image_height / aspect
     
-    # Center the image horizontally
-    img_x = x + (label_width - image_width) / 2
-    img_y = y + label_height - image_height - config['content']['image']['padding']
+    # Apply max width constraint
+    max_width = inches_to_points(config['content']['image']['max_width'])
+    if image_width > max_width:
+        image_width = max_width
+        image_height = image_width * aspect
+    
+    # Align the image to the far-left
+    img_x = x + config['content']['image']['padding']
+    
+    # Center the image vertically
+    img_y = y + (label_height - image_height) / 2
     
     c.drawImage(ImageReader(img), img_x, img_y, width=image_width, height=image_height)
 
 def draw_centered_description(c, x, y, label_width, label_height, config, item):
     """
-    Draw the product description centered on the label.
+    Draw the product description centered vertically and horizontally on the label.
 
     Args:
         c (canvas.Canvas): The ReportLab canvas object.
@@ -156,21 +169,33 @@ def draw_centered_description(c, x, y, label_width, label_height, config, item):
     c.setFont(desc_config['font'], desc_config['size'])
     description = item['description']
 
-    # Wrap the text to fit the label width
-    max_width = label_width - 2 * inches_to_points(desc_config['horizontal_padding'])
-    wrapped_desc = wrap(description, width=int(max_width / (desc_config['size'] / 2)))
+    # Set the width to 2.5 inches
+    desc_width = inches_to_points(2.5)
+    
+    # Add horizontal padding
+    horizontal_padding = inches_to_points(desc_config['horizontal_padding'])
+    
+    # Calculate the starting x-coordinate to center the description
+    start_x = x + (label_width - desc_width) / 2 + horizontal_padding
+
+    # Wrap the text to fit the new width (accounting for padding)
+    wrapped_desc = wrap(description, width=int((desc_width - 4 * horizontal_padding) / (desc_config['size'] / 2)))
 
     # Calculate the total height of the wrapped text
     line_height = desc_config['size'] + 2  # Add 2 for line spacing
     text_height = len(wrapped_desc) * line_height
 
-    # Calculate the starting y-coordinate to position the text at the bottom
-    start_y = y + inches_to_points(desc_config['vertical_padding']) + text_height
+    # Calculate the vertical center of the label
+    label_center_y = y + label_height / 2
 
+    # Calculate the starting y-coordinate to vertically center the text
+    start_y = label_center_y + text_height / 2
+
+    # Draw each line of the wrapped description
     for i, line in enumerate(wrapped_desc):
-        text_width = c.stringWidth(line, desc_config['font'], desc_config['size'])
-        text_x = x + (label_width - text_width) / 2
-        c.drawString(text_x, start_y - i * line_height, line)
+        line_width = c.stringWidth(line, desc_config['font'], desc_config['size'])
+        line_x = x + (label_width - line_width) / 2  # Center each line horizontally
+        c.drawString(line_x, start_y - i * line_height, line)
 
 def get_image_dimensions(image_url):
     """
