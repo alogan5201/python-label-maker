@@ -227,7 +227,7 @@ def draw_background_image(c, x, y, label_width, label_height, config, item):
 
 def draw_centered_description(c, x, y, label_width, label_height, config, item):
     """
-    Draw the product description centered vertically and horizontally on the label.
+    Draw the product description left-aligned within a centered container on the label.
 
     Args:
         c (canvas.Canvas): The ReportLab canvas object.
@@ -248,11 +248,11 @@ def draw_centered_description(c, x, y, label_width, label_height, config, item):
     # Add horizontal padding
     horizontal_padding = inches_to_points(desc_config['horizontal_padding'])
     
-    # Calculate the starting x-coordinate to center the description
-    start_x = x + (label_width - desc_width) / 2 + horizontal_padding
+    # Calculate the starting x-coordinate to center the description container
+    container_start_x = x + (label_width - desc_width) / 2
 
     # Wrap the text to fit the new width (accounting for padding)
-    wrapped_desc = wrap(description, width=int((desc_width - 4 * horizontal_padding) / (desc_config['size'] / 2)))
+    wrapped_desc = wrap(description, width=int((desc_width - 2 * horizontal_padding) / (desc_config['size'] / 2)))
 
     # Calculate the total height of the wrapped text
     line_height = desc_config['size'] + 2  # Add 2 for line spacing
@@ -261,14 +261,16 @@ def draw_centered_description(c, x, y, label_width, label_height, config, item):
     # Calculate the vertical center of the label
     label_center_y = y + label_height / 2
 
-    # Calculate the starting y-coordinate to vertically center the text
+    # Calculate the starting y-coordinate to vertically center the text container
     start_y = label_center_y + text_height / 2
 
     # Draw each line of the wrapped description
     for i, line in enumerate(wrapped_desc):
-        line_width = c.stringWidth(line, desc_config['font'], desc_config['size'])
-        line_x = x + (label_width - line_width) / 2  # Center each line horizontally
+        line_x = container_start_x + horizontal_padding  # Left-align within the container
         c.drawString(line_x, start_y - i * line_height, line)
+
+    # Optionally, draw a border around the text container for debugging
+    # c.rect(container_start_x, label_center_y - text_height / 2, desc_width, text_height, stroke=1, fill=0)
 
 def get_image_dimensions(image_url):
     """
