@@ -33,19 +33,19 @@
   "content": {
     "product_code": {
       "font": "Arial-Black",
-      "size": 24,
+      "size": 18,
       "color": [0, 0, 0]
     },
     "description": {
       "font": "Arial-Black",
-      "size": 8,
+      "size": 6,
       "color": [0, 0, 0],
       "max_width": 20,
       "horizontal_padding": 0.1,
       "vertical_padding": 0.1      
     },
     "image": {
-      "height_percentage": 0.5,
+      "height_percentage": 0.7,
       "padding": 5
     }
   },

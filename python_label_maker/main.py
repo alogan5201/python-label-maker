@@ -16,7 +16,6 @@ async def main():
     # Retrieve items from database
     items = db.get_all_items()
     if items and len(items) > 0:
-        ic(items)
         
         # Calculate the number of items per PDF
         items_per_pdf = config['layout']['columns'] * config['layout']['rows']

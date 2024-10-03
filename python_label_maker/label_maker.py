@@ -82,11 +82,11 @@ def draw_product_code(c, x, y, label_width, label_height, config, item):
     product_code = item['name']
     text_width = c.stringWidth(product_code, product_code_config['font'], product_code_config['size'])
     text_x = x + (label_width - text_width) / 2
-    c.drawString(text_x, y + label_height - 25, product_code)
+    c.drawString(text_x, y + label_height - product_code_config['size'] - 5, product_code)
 
-def draw_product_image(c, x, y, label_width, label_height, config, item):
+def draw_label(c, x, y, label_width, label_height, config, item):
     """
-    Draw the product image on the label.
+    Draw a complete label with background image and centered description.
 
     Args:
         c (canvas.Canvas): The ReportLab canvas object.
@@ -96,9 +96,32 @@ def draw_product_image(c, x, y, label_width, label_height, config, item):
         label_height (float): The height of the label.
         config (dict): The configuration dictionary.
         item (dict): The item dictionary containing the product information.
+    """
+    # Draw background image
+    draw_background_image(c, x, y, label_width, label_height, config, item)
+    
+    # Draw product code
+    draw_product_code(c, x, y, label_width, label_height, config, item)
+    
+    # Draw centered description
+    draw_centered_description(c, x, y, label_width, label_height, config, item)
+    
+    # Draw label border if debug is enabled
+    if config['debug']['draw_borders']:
+        draw_label_border(c, x, y, label_width, label_height, config)
 
-    Returns:
-        float: The x-coordinate where the text should start after the image.
+def draw_background_image(c, x, y, label_width, label_height, config, item):
+    """
+    Draw the product image as a background for the label.
+
+    Args:
+        c (canvas.Canvas): The ReportLab canvas object.
+        x (float): The x-coordinate of the label.
+        y (float): The y-coordinate of the label.
+        label_width (float): The width of the label.
+        label_height (float): The height of the label.
+        config (dict): The configuration dictionary.
+        item (dict): The item dictionary containing the product information.
     """
     image_url = item['item_img']
     response = requests.get(image_url)
@@ -106,17 +129,19 @@ def draw_product_image(c, x, y, label_width, label_height, config, item):
     img_width, img_height = img.size
     aspect = img_height / float(img_width)
     
-    desired_img_height = label_height * config['content']['image']['height_percentage']
-    img_width = desired_img_height / aspect
-    img_x = x + config['content']['image']['padding']
-    img_y = y + (label_height - desired_img_height) / 2
+    # Calculate image dimensions
+    image_height = label_height * config['content']['image']['height_percentage']
+    image_width = image_height / aspect
     
-    c.drawImage(ImageReader(img), img_x, img_y, width=img_width, height=desired_img_height)
-    return img_x + img_width + config['content']['image']['padding']
+    # Center the image horizontally
+    img_x = x + (label_width - image_width) / 2
+    img_y = y + label_height - image_height - config['content']['image']['padding']
+    
+    c.drawImage(ImageReader(img), img_x, img_y, width=image_width, height=image_height)
 
-def draw_product_description(c, x, y, label_width, label_height, config, item):
+def draw_centered_description(c, x, y, label_width, label_height, config, item):
     """
-    Draw the product description on the label with left alignment.
+    Draw the product description centered on the label.
 
     Args:
         c (canvas.Canvas): The ReportLab canvas object.
@@ -131,24 +156,20 @@ def draw_product_description(c, x, y, label_width, label_height, config, item):
     c.setFont(desc_config['font'], desc_config['size'])
     description = item['description']
 
-    # Calculate available width for description
-    image_width = label_height * config['content']['image']['height_percentage']
-    available_width = label_width - image_width - 3 * config['content']['image']['padding']
-
-    # Wrap the text to fit the available width
-    wrapped_desc = wrap(description, width=int(available_width / (desc_config['size'] / 2)))
+    # Wrap the text to fit the label width
+    max_width = label_width - 2 * inches_to_points(desc_config['horizontal_padding'])
+    wrapped_desc = wrap(description, width=int(max_width / (desc_config['size'] / 2)))
 
     # Calculate the total height of the wrapped text
     line_height = desc_config['size'] + 2  # Add 2 for line spacing
     text_height = len(wrapped_desc) * line_height
 
-    # Calculate the starting y-coordinate to center the text vertically
-    start_y = y + (label_height - text_height) / 2 + text_height
-
-    # Calculate the left-aligned x-coordinate for the text
-    text_x = x + image_width + 2 * config['content']['image']['padding']
+    # Calculate the starting y-coordinate to position the text at the bottom
+    start_y = y + inches_to_points(desc_config['vertical_padding']) + text_height
 
     for i, line in enumerate(wrapped_desc):
+        text_width = c.stringWidth(line, desc_config['font'], desc_config['size'])
+        text_x = x + (label_width - text_width) / 2
         c.drawString(text_x, start_y - i * line_height, line)
 
 def get_image_dimensions(image_url):
@@ -198,23 +219,7 @@ def create_label_pdf(config, items):
         x = x_margin + col * (label_width + x_gap)
         y = page_height - y_margin - (row + 1) * (label_height + y_gap)
         
-        draw_label_border(c, x, y, label_width, label_height, config)
-        draw_product_code(c, x, y, label_width, label_height, config, item)
-        
-        # Get image dimensions
-        img_width, img_height = get_image_dimensions(item['item_img'])
-        
-        # Calculate the width taken by the image
-        desired_img_height = label_height * config['content']['image']['height_percentage']
-        image_width = (desired_img_height / img_height) * img_width
-        image_width += 2 * config['content']['image']['padding']
-        
-        # Adjust x-coordinate and width for description
-        desc_x = x + image_width
-        desc_width = label_width - image_width
-        
-        draw_product_image(c, x, y, label_width, label_height, config, item)
-        draw_product_description(c, desc_x, y, desc_width, label_height, config, item)
+        draw_label(c, x, y, label_width, label_height, config, item)
         
         if (index + 1) % (columns * rows) == 0:
             c.showPage()  # Start a new page
