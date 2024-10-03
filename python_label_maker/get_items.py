@@ -129,6 +129,7 @@ async def get_items():
                 if company_name in company_logo_links:
                     company_logo_url = company_logo_links[company_name]
                     ic(f"Found logo URL for {company_name}: {company_logo_url}")
+                    # Writes the item record to the database
                     if company_logo_url:
                         insert_item(
                             name=display_name,

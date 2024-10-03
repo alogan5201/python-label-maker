@@ -75,9 +75,34 @@ def insert_item(name, description, company_img_url, item_img_url):
     finally:
         conn.close()
 
+def get_all_items():
+    conn = sqlite3.connect(db_file)
+    cursor = conn.cursor()
+
+    try:
+        # SQL query to select all records from the items table
+        select_all_sql = 'SELECT * FROM items'
+        
+        # Execute the query
+        cursor.execute(select_all_sql)
+        
+        # Fetch all records
+        items = cursor.fetchall()
+        
+        # Return the items
+        return items
+
+    except sqlite3.Error as e:
+        ic(f"Database Error: {e}")
+        return []
+
+    finally:
+        conn.close()
+
 # Create the database and table
 create_database_and_table()
-
+items = get_all_items()
+ic(items)
 # Example usage of the insert_item function
 # insert_item(
 #     name="Sample Item",
