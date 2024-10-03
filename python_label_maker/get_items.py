@@ -12,6 +12,7 @@ from PIL import Image
 from io import BytesIO
 import requests
 from .db import insert_item
+from loguru import logger
 
 def load_config():
     with open('data/config.json', 'r') as f:
@@ -113,35 +114,37 @@ async def get_items():
             name = item.get('name')
             description = item.get('description')
             display_name = item.get('display_name')
+            item_name = display_name if display_name else name
             manufacturer = item.get('manufacturer')
-            if image:
+            if item_name and image:
                 image_url = f"https://{account}.app.netsuite.com{image}"
                 # if "LUMIEN" in manufacturer:
                 # Extract the first word from the manufacturer and lowercase it
                 company_name = manufacturer.split()[0].lower()
                 # Check if there is a file with the company name in the company image directory
                 company_image_path = os.path.join(company_image_directory, f"{company_name}.png")
-                ic(company_image_path)
+                
                 company_logo_links = {
                     "lumien": "https://i.imgur.com/cxcXM5J.png"
                 }
                 # Check if the company name exists in manufacturer_logo_links
                 if company_name in company_logo_links:
                     company_logo_url = company_logo_links[company_name]
-                    ic(f"Found logo URL for {company_name}: {company_logo_url}")
+                    
                     # Writes the item record to the database
-                    if company_logo_url:
+                    # ? I may need to use the name if the display name is not available
+                    # ? For now, I'll use the display name                    
+                    if company_logo_url and display_name:
+                        
                         insert_item(
                             name=display_name,
                             description=description,
                             company_img_url=company_logo_url,
-                            item_img_url=image_url
+                            item_img_url=image_url,
+                            manufacturer=manufacturer
                         )                         
                 else:
-                    ic(f"No logo URL found for {company_name}")
-                
-        else:
-            ic(name)
+                    logger.info(f"No logo URL found for {company_name}")
 
 def to_snake_case(text: str) -> str:
     # Replace any non-alphanumeric characters with underscores

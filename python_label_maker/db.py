@@ -1,7 +1,7 @@
 import sqlite3
 import os
+from loguru import logger
 from icecream import ic
-
 # Database file name
 db_file = "db.sqlite"
 
@@ -22,7 +22,8 @@ def create_database_and_table():
         name TEXT NOT NULL,
         description TEXT,
         company TEXT,
-        item_img TEXT
+        item_img TEXT,
+        manufacturer TEXT
     )
     '''
 
@@ -35,12 +36,12 @@ def create_database_and_table():
 
     # Print a message about what was done
     if db_exists:
-        print(f"Connected to existing database: {db_file}")
+        logger.info(f"Connected to existing database: {db_file}")
     else:
-        print(f"Created new database: {db_file}")
-    print("Ensured 'items' table exists with all required columns.")
+        logger.info(f"Created new database: {db_file}")
+    logger.info("Ensured 'items' table exists with all required columns.")
 
-def insert_item(name, description, company_img_url, item_img_url):
+def insert_item(name, description, company_img_url, item_img_url, manufacturer):
     if not name:
         ic("Error: Name cannot be empty")
         return
@@ -58,20 +59,20 @@ def insert_item(name, description, company_img_url, item_img_url):
         existing_item = cursor.fetchone()
 
         if existing_item:
-            ic(f"Item with name '{name}' already exists. Skipping insertion.")
+            logger.info(f"Item '{name}' exists. Skipped.")
         else:
             insert_sql = '''
-            INSERT INTO items (name, description, company_img, item_img)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO items (name, description, company_img, item_img, manufacturer)
+            VALUES (?, ?, ?, ?, ?)
             '''
-            cursor.execute(insert_sql, (name, description, company_img_url, item_img_url))
+            cursor.execute(insert_sql, (name, description, company_img_url, item_img_url, manufacturer))
             conn.commit()
-            ic(f"Inserted new item: {name}")
+            logger.info(f"Inserted item: {name}")
 
     except sqlite3.IntegrityError as e:
-        ic(f"Integrity Error: {e}")
+        logger.error(f"Integrity Error: {e}")
     except sqlite3.Error as e:
-        ic(f"Database Error: {e}")
+        logger.error(f"Database Error: {e}")
     finally:
         conn.close()
 
@@ -87,7 +88,13 @@ def get_all_items():
         cursor.execute(select_all_sql)
         
         # Fetch all records
-        items = cursor.fetchall()
+        rows = cursor.fetchall()
+        
+        # Get column names
+        column_names = [description[0] for description in cursor.description]
+        
+        # Convert rows to list of dictionaries
+        items = [dict(zip(column_names, row)) for row in rows]
         
         # Return the items
         return items
@@ -101,8 +108,6 @@ def get_all_items():
 
 # Create the database and table
 create_database_and_table()
-items = get_all_items()
-ic(items)
 # Example usage of the insert_item function
 # insert_item(
 #     name="Sample Item",
