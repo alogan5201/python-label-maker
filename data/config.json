@@ -40,7 +40,9 @@
       "font": "Arial-Black",
       "size": 8,
       "color": [0, 0, 0],
-      "max_width": 40
+      "max_width": 20,
+      "horizontal_padding": 0.1,
+      "vertical_padding": 0.1      
     },
     "image": {
       "height_percentage": 0.5,
@@ -49,8 +51,8 @@
   },
   "debug": {
     "draw_borders": true,
-    "border_color": [189, 195, 199],
-    "border_width": 0.5
+    "border_color": [0, 0, 0],
+    "border_width": 1
   },
   "output": {
     "filename": "output/pdfs/labels_ol125.pdf"
