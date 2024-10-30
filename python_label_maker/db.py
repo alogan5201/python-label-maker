@@ -9,13 +9,11 @@ def create_database_and_table():
     # Check if the database file already exists
     db_exists = os.path.exists(db_file)
 
-    # Connect to the database (this will create it if it doesn't exist)
+    # Connect to the database
     conn = sqlite3.connect(db_file)
-
     # Create a cursor object to execute SQL commands
     cursor = conn.cursor()
-
-    # SQL command to create the 'items' table if it doesn't exist
+    # Create the 'items' table if it doesn't exist
     create_table_sql = '''
     CREATE TABLE IF NOT EXISTS items (
         id INTEGER PRIMARY KEY,
@@ -35,12 +33,8 @@ def create_database_and_table():
     conn.close()
 
     # Print a message about what was done
-    if db_exists:
-        logger.info(f"Connected to existing database: {db_file}")
-    else:
-        logger.info(f"Created new database: {db_file}")
-    logger.info("Ensured 'items' table exists with all required columns.")
-
+    logger.info(f"Connected to database from: {db_file}")
+    
 def insert_item(name, description, company_img_url, item_img_url, manufacturer):
     if not name:
         ic("Error: Name cannot be empty")

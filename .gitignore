@@ -1,4 +1,5 @@
 python_label_maker/__pycache__
+python_label_maker/db.sqlite
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -89,3 +90,4 @@ output/
 
 input/images
 notes
+
