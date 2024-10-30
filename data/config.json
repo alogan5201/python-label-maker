@@ -53,7 +53,7 @@
   "debug": {
     "draw_borders": true,
     "border_color": [0, 0, 0],
-    "border_width": 1
+    "limit_netsuite_fetch_results": true
   },
   "output": {
     "filename": "output/pdfs/labels_ol125.pdf"

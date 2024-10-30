@@ -102,11 +102,16 @@ def to_snake_case(text: str) -> str:
     return re.sub(r'_+', '_', snake_case.lower()).strip('_')
 
 async def get_items():
-    limit_results = "FETCH FIRST 5 ROWS ONLY;"
+    limit_results = ""
+    if config['debug']['limit_netsuite_fetch_results']:
+        limit_results = "FETCH FIRST 5 ROWS ONLY;"
+        logger.warning(f"LIMIT RESULTS = {limit_results}")
+        return
+    
     vendors = ["LUMIEN LIGHTING", "WAC"]
     query = {
         "procedure": "queryRun",
-        "query": f"SELECT item.id AS id, item.itemid AS name, item.displayName AS display_name, item.purchasedescription as description, item.manufacturer AS manufacturer, item.custitem_jls_item_image_url AS item_img FROM item WHERE item.manufacturer = ?",
+        "query": f"SELECT item.id AS id, item.itemid AS name, item.displayName AS display_name, item.purchasedescription as description, item.manufacturer AS manufacturer, item.custitem_jls_item_image_url AS item_img FROM item WHERE item.manufacturer = ? {limit_results}",
         "params": [vendors[1]],
     }
     items = await process_data(query)
@@ -135,12 +140,9 @@ async def get_items():
                 }
                 # Check if the company name exists in manufacturer_logo_links
                 if company_name in company_logo_links:
-                    company_logo_url = company_logo_links[company_name]                    
-                    # Cache the item record
-                    # ? I may need to use the name if the display name is not available
-                    # ? For now, I'll use the display name                    
+                    company_logo_url = company_logo_links[company_name]                                     
                     if company_logo_url and display_name:
-                    # if we have the required data then cache the item to the local database    
+                    # Caches the item
                         insert_item(
                             name=display_name,
                             description=description,
