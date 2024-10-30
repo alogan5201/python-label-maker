@@ -7,7 +7,7 @@ from PIL import Image, UnidentifiedImageError
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from textwrap import wrap
-from .db import get_all_items
+from .db import get_cached_items
 from icecream import ic
 from loguru import logger
 import requests
@@ -226,21 +226,9 @@ def draw_background_image(c, x, y, label_width, label_height, config, item):
         logger.warning(f"No product image URL provided for item: {item.get('name', 'Unknown')}")
 
 def draw_centered_description(c, x, y, label_width, label_height, config, item):
-    """
-    Draw the product description left-aligned within a centered container on the label.
-
-    Args:
-        c (canvas.Canvas): The ReportLab canvas object.
-        x (float): The x-coordinate of the label.
-        y (float): The y-coordinate of the label.
-        label_width (float): The width of the label.
-        label_height (float): The height of the label.
-        config (dict): The configuration dictionary.
-        item (dict): The item dictionary containing the product information.
-    """
     desc_config = config['content']['description']
     c.setFont(desc_config['font'], desc_config['size'])
-    description = item['description']
+    description = item.get('description', '')  # Use an empty string as default if description is None
 
     # Set the width to 2.5 inches
     desc_width = inches_to_points(2.5)
@@ -251,26 +239,26 @@ def draw_centered_description(c, x, y, label_width, label_height, config, item):
     # Calculate the starting x-coordinate to center the description container
     container_start_x = x + (label_width - desc_width) / 2
 
-    # Wrap the text to fit the new width (accounting for padding)
-    wrapped_desc = wrap(description, width=int((desc_width - 2 * horizontal_padding) / (desc_config['size'] / 2)))
+    if description:  # Only wrap and draw if description is not empty
+        # Wrap the text to fit the new width (accounting for padding)
+        wrapped_desc = wrap(description, width=int((desc_width - 2 * horizontal_padding) / (desc_config['size'] / 2)))
 
-    # Calculate the total height of the wrapped text
-    line_height = desc_config['size'] + 2  # Add 2 for line spacing
-    text_height = len(wrapped_desc) * line_height
+        # Calculate the total height of the wrapped text
+        line_height = desc_config['size'] + 2  # Add 2 for line spacing
+        text_height = len(wrapped_desc) * line_height
 
-    # Calculate the vertical center of the label
-    label_center_y = y + label_height / 2
+        # Calculate the vertical center of the label
+        label_center_y = y + label_height / 2
 
-    # Calculate the starting y-coordinate to vertically center the text container
-    start_y = label_center_y + text_height / 2
+        # Calculate the starting y-coordinate to vertically center the text container
+        start_y = label_center_y + text_height / 2
 
-    # Draw each line of the wrapped description
-    for i, line in enumerate(wrapped_desc):
-        line_x = container_start_x + horizontal_padding  # Left-align within the container
-        c.drawString(line_x, start_y - i * line_height, line)
-
-    # Optionally, draw a border around the text container for debugging
-    # c.rect(container_start_x, label_center_y - text_height / 2, desc_width, text_height, stroke=1, fill=0)
+        # Draw each line of the wrapped description
+        for i, line in enumerate(wrapped_desc):
+            line_x = container_start_x + horizontal_padding  # Left-align within the container
+            c.drawString(line_x, start_y - i * line_height, line)
+    else:
+        logger.warning(f"No description available for item: {item.get('name', 'Unknown')}")
 
 def get_image_dimensions(image_url):
     """

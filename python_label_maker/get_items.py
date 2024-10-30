@@ -93,15 +93,23 @@ def get_first_word(text: str) -> str:
     # Split the text by whitespace and return the first word
     return text.split()[0] if text else ""
 
+def to_snake_case(text: str) -> str:
+    # Replace any non-alphanumeric characters with underscores
+    snake_case = re.sub(r'[^\w\s]', '_', text)
+    # Replace spaces with underscores
+    snake_case = re.sub(r'\s+', '_', snake_case)
+    # Convert to lowercase and remove any consecutive underscores
+    return re.sub(r'_+', '_', snake_case.lower()).strip('_')
+
 async def get_items():
     limit_results = "FETCH FIRST 5 ROWS ONLY;"
+    vendors = ["LUMIEN LIGHTING", "WAC"]
     query = {
         "procedure": "queryRun",
-        "query": f"SELECT item.id AS id, item.itemid AS name, item.displayName AS display_name, item.purchasedescription as description, item.manufacturer AS manufacturer, item.custitem_jls_item_image_url AS item_img FROM item WHERE item.manufacturer = ? {limit_results}",
-        "params": ["LUMIEN LIGHTING"],  # Use the MANUFACTURER variable
+        "query": f"SELECT item.id AS id, item.itemid AS name, item.displayName AS display_name, item.purchasedescription as description, item.manufacturer AS manufacturer, item.custitem_jls_item_image_url AS item_img FROM item WHERE item.manufacturer = ?",
+        "params": [vendors[1]],
     }
     items = await process_data(query)
-    
     # Ensure the path is correct and exists
     item_image_directory = os.path.join('input', 'images', 'items')
     os.makedirs(item_image_directory, exist_ok=True)
@@ -118,24 +126,21 @@ async def get_items():
             manufacturer = item.get('manufacturer')
             if item_name and image:
                 image_url = f"https://{account}.app.netsuite.com{image}"
-                # if "LUMIEN" in manufacturer:
                 # Extract the first word from the manufacturer and lowercase it
                 company_name = manufacturer.split()[0].lower()
                 # Check if there is a file with the company name in the company image directory
-                company_image_path = os.path.join(company_image_directory, f"{company_name}.png")
-                
+                company_image_path = os.path.join(company_image_directory, f"{company_name}.png")                
                 company_logo_links = {
                     "lumien": "https://i.imgur.com/cxcXM5J.png"
                 }
                 # Check if the company name exists in manufacturer_logo_links
                 if company_name in company_logo_links:
-                    company_logo_url = company_logo_links[company_name]
-                    
-                    # Writes the item record to the database
+                    company_logo_url = company_logo_links[company_name]                    
+                    # Cache the item record
                     # ? I may need to use the name if the display name is not available
                     # ? For now, I'll use the display name                    
                     if company_logo_url and display_name:
-                        
+                    # if we have the required data then cache the item to the local database    
                         insert_item(
                             name=display_name,
                             description=description,
@@ -145,11 +150,3 @@ async def get_items():
                         )                         
                 else:
                     logger.info(f"No logo URL found for {company_name}")
-
-def to_snake_case(text: str) -> str:
-    # Replace any non-alphanumeric characters with underscores
-    snake_case = re.sub(r'[^\w\s]', '_', text)
-    # Replace spaces with underscores
-    snake_case = re.sub(r'\s+', '_', snake_case)
-    # Convert to lowercase and remove any consecutive underscores
-    return re.sub(r'_+', '_', snake_case.lower()).strip('_')

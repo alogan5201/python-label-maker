@@ -76,7 +76,7 @@ def insert_item(name, description, company_img_url, item_img_url, manufacturer):
     finally:
         conn.close()
 
-def get_all_items():
+def get_cached_items():
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
 
