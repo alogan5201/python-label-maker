@@ -82,9 +82,6 @@ python_label_maker/
 └── .gitignore
 ```
 
-## License
-
-This project is proprietary and not open-source. All rights reserved.
 
 ## Contact
 
